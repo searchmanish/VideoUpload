@@ -37,16 +37,10 @@ public class VideoActivity extends AppCompatActivity {
     private Button button, uploadVideo;
     public static final int REQUEST_PICK_VIDEO = 3;
     public ProgressDialog pDialog;
-    private VideoView mVideoView;
     private TextView mBufferingTextView;
     private Uri video;
     private String videoPath;
 
-    // Current playback position (in milliseconds).
-    private int mCurrentPosition = 0;
-
-    // Tag for the instance state bundle.
-    private static final String PLAYBACK_TIME = "play_time";
 
 
     @Override
@@ -74,96 +68,10 @@ public class VideoActivity extends AppCompatActivity {
                 }
             }
         });
-
-        mVideoView = (VideoView) findViewById(R.id.videoview);
         mBufferingTextView = (TextView) findViewById(R.id.buffering_textview);
-
-        if (savedInstanceState != null) {
-            mCurrentPosition = savedInstanceState.getInt(PLAYBACK_TIME);
-        }
-
-        // Set up the media controller widget and attach it to the video view.
-        MediaController controller = new MediaController(this);
-        controller.setMediaPlayer(mVideoView);
-        mVideoView.setMediaController(controller);
-
         initDialog();
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            mVideoView.pause();
-        }
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        // Media playback takes a lot of resources, so everything should be
-        // stopped and released at this time.
-        releasePlayer();
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-
-        // Save the current playback position (in milliseconds) to the
-        // instance state bundle.
-        outState.putInt(PLAYBACK_TIME, mVideoView.getCurrentPosition());
-    }
-
-    private void initializePlayer(Uri uri) {
-        // Show the "Buffering..." message while the video loads.
-        mBufferingTextView.setVisibility(VideoView.VISIBLE);
-        if (uri != null){
-            mVideoView.setVideoURI(uri);
-        }
-        // Listener for onPrepared() event (runs after the media is prepared).
-        mVideoView.setOnPreparedListener(
-                new MediaPlayer.OnPreparedListener() {
-                    @Override
-                    public void onPrepared(MediaPlayer mediaPlayer) {
-
-                        // Hide buffering message.
-                        mBufferingTextView.setVisibility(VideoView.INVISIBLE);
-
-                        // Restore saved position, if available.
-                        if (mCurrentPosition > 0) {
-                            mVideoView.seekTo(mCurrentPosition);
-                        } else {
-                            // Skipping to 1 shows the first frame of the video.
-                            mVideoView.seekTo(1);
-                        }
-
-                        // Start playing!
-                        mVideoView.start();
-                    }
-                });
-
-        // Listener for onCompletion() event (runs after media has finished
-        // playing).
-        mVideoView.setOnCompletionListener(
-                new MediaPlayer.OnCompletionListener() {
-                    @Override
-                    public void onCompletion(MediaPlayer mediaPlayer) {
-                        Toast.makeText(VideoActivity.this,
-                                R.string.toast_message,
-                                Toast.LENGTH_SHORT).show();
-
-                        // Return the video position to the start.
-                        mVideoView.seekTo(0);
-                    }
-                });
-    }
-
-    private void releasePlayer() {
-        mVideoView.stopPlayback();
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -177,9 +85,6 @@ public class VideoActivity extends AppCompatActivity {
                             Toast.LENGTH_LONG).show();
                     video = data.getData();
                     videoPath = getPath(data.getData());
-                    initializePlayer(video);
-                    // uploadFile(video.getPath());
-
                 }
             }
         }
@@ -204,17 +109,7 @@ public class VideoActivity extends AppCompatActivity {
         cursor.close();
 
         return path;
-       /* String[] projection = { MediaStore.Video.Media.DATA };
-        Cursor cursor = getContentResolver().query(uri, projection, null, null, null);
-        if (cursor != null) {
-            // HERE YOU WILL GET A NULLPOINTER IF CURSOR IS NULL
-            // THIS CAN BE, IF YOU USED OI FILE MANAGER FOR PICKING THE MEDIA
-            int column_index = cursor
-                    .getColumnIndexOrThrow(MediaStore.Video.Media.DATA);
-            cursor.moveToFirst();
-            return cursor.getString(column_index);
-        } else
-            return null;*/
+
     }
 
     private void uploadFile() {
